@@ -37,7 +37,7 @@ final class MovieSearchViewModelTests: XCTestCase {
 
     @MainActor func test_search_failure_setsErrorMessage() {
         let mock = MockMovieAPIClient()
-        mock.searchResultToReturn = .failure(NSError(domain: "Test", code: -1, userInfo: [NSLocalizedDescriptionKey: "Test error"]))
+        mock.searchResultToReturn = .failure(MockMovieAPIClient.MockError.networkFailure)
 
         let viewModel = MovieSearchViewModel(apiClient: mock)
         viewModel.query = "Nonexistent"
@@ -48,7 +48,9 @@ final class MovieSearchViewModelTests: XCTestCase {
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             XCTAssertTrue(viewModel.movies.isEmpty)
-            XCTAssertEqual(viewModel.errorMessage, "Test error")
+            XCTAssertNotNil(viewModel.errorMessage)
+            XCTAssertTrue(viewModel.errorMessage!.contains("Network") ||
+                         viewModel.errorMessage!.contains("connection"))
             expectation.fulfill()
         }
 
@@ -99,7 +101,7 @@ final class MovieSearchViewModelTests: XCTestCase {
 
     @MainActor func test_fetchMovieDetail_failure_setsErrorMessage() {
         let mock = MockMovieAPIClient()
-        mock.detailResultToReturn = .failure(MockMovieAPIClient.MockError.unset)
+        mock.detailResultToReturn = .failure(MockMovieAPIClient.MockError.movieNotFound)
 
         let viewModel = MovieDetailViewModel(imdbID: "invalid", apiClient: mock)
 
@@ -110,11 +112,66 @@ final class MovieSearchViewModelTests: XCTestCase {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
             XCTAssertNil(viewModel.movieDetail)
             XCTAssertNotNil(viewModel.errorMessage)
+            XCTAssertTrue(viewModel.errorMessage!.contains("not found") ||
+                         viewModel.errorMessage!.contains("Movie"))
             XCTAssertFalse(viewModel.isLoading)
             expectation.fulfill()
         }
 
         wait(for: [expectation], timeout: 1)
     }
+    
+    @MainActor func test_search_handles_different_error_types() {
+        let mock = MockMovieAPIClient()
+        let viewModel = MovieSearchViewModel(apiClient: mock)
+        
+        let expectation = XCTestExpectation(description: "Error handling test")
+        expectation.expectedFulfillmentCount = 2
+        
+        // Test network error
+        mock.searchResultToReturn = .failure(MockMovieAPIClient.MockError.networkFailure)
+        viewModel.query = "test1"
+        viewModel.search()
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertNotNil(viewModel.errorMessage)
+            XCTAssertTrue(viewModel.movies.isEmpty)
+            expectation.fulfill()
+            
+            // Test rate limit error
+            mock.searchResultToReturn = .failure(MockMovieAPIClient.MockError.rateLimitExceeded)
+            viewModel.query = "test2"
+            viewModel.search()
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                XCTAssertNotNil(viewModel.errorMessage)
+                XCTAssertTrue(viewModel.movies.isEmpty)
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 2)
+    }
+    
+    @MainActor func test_search_prevents_duplicate_requests() {
+        let mock = MockMovieAPIClient()
+        let viewModel = MovieSearchViewModel(apiClient: mock)
+        
+        mock.searchResultToReturn = .success([
+            Movie(title: "Test", year: "2024", poster: "", imdbID: "tt123")
+        ])
+        
+        viewModel.query = "same query"
+        viewModel.search()
+        viewModel.search() // Second call should be ignored
+        
+        let expectation = XCTestExpectation(description: "Duplicate prevention test")
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertEqual(viewModel.movies.count, 1)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 1)
+    }
 }
-

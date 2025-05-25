@@ -84,7 +84,7 @@ final class MovieDetailViewModel: ObservableObject {
     private func userFriendlyError(from error: Error) -> String {
         if error.localizedDescription.contains("not found") ||
            error.localizedDescription.contains("404") {
-            return "Movie not found. Please check the movie ID."
+            return "Movie not found"
         } else if error.localizedDescription.contains("network") ||
                   error.localizedDescription.contains("internet") {
             return "Network error. Please check your internet connection."
