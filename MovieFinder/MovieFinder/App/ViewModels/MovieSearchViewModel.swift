@@ -15,6 +15,7 @@ final class MovieSearchViewModel: ObservableObject {
     @Published var movies: [Movie] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    @Published var selectedMovieID: String?
 
     private let apiClient: MovieAPIClientProtocol
 

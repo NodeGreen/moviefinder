@@ -25,14 +25,24 @@ struct MovieSearchView: View {
             content
                 .background(Color(.systemGroupedBackground))
         }
-        .edgesIgnoringSafeArea(.bottom)
+        .navigationDestination(
+            item: Binding(
+                get: { viewModel.selectedMovieID },
+                set: { viewModel.selectedMovieID = $0 }
+            )
+        ) { imdbID in
+            MovieDetailView(imdbID: imdbID)
+        }
     }
 
     @ViewBuilder
     private var content: some View {
         if viewModel.isLoading {
-            ProgressView()
-
+            VStack {
+                Spacer()
+                ProgressView()
+                Spacer()
+            }
         } else if let error = viewModel.errorMessage {
             ScrollView {
                 VStack(spacing: 8) {
@@ -56,7 +66,11 @@ struct MovieSearchView: View {
             }
         } else {
             List(viewModel.movies) { movie in
-                MovieRow(movie: movie)
+                Button {
+                    viewModel.selectedMovieID = movie.imdbID
+                } label: {
+                    MovieRow(movie: movie)
+                }
             }
             .listStyle(.plain)
         }
@@ -64,5 +78,5 @@ struct MovieSearchView: View {
 }
 
 #Preview {
-    MovieSearchView()
+    MovieSearchView(viewModel: MovieSearchViewModel(apiClient: MockMovieAPIClient()))
 }
