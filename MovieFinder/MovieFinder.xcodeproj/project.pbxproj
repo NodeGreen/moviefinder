@@ -45,11 +45,6 @@
 			path = MovieFinderTests;
 			sourceTree = "<group>";
 		};
-		AE2614612DE38CA9006DB08F /* MovieFinderUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = MovieFinderUITests;
-			sourceTree = "<group>";
-		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -83,7 +78,6 @@
 				AE2614802DE395A5006DB08F /* Secrets.plist */,
 				AE2614492DE38CA8006DB08F /* MovieFinder */,
 				AE2614572DE38CA9006DB08F /* MovieFinderTests */,
-				AE2614612DE38CA9006DB08F /* MovieFinderUITests */,
 				AE2614482DE38CA8006DB08F /* Products */,
 			);
 			sourceTree = "<group>";
@@ -158,9 +152,6 @@
 			);
 			dependencies = (
 				AE2614602DE38CA9006DB08F /* PBXTargetDependency */,
-			);
-			fileSystemSynchronizedGroups = (
-				AE2614612DE38CA9006DB08F /* MovieFinderUITests */,
 			);
 			name = MovieFinderUITests;
 			packageProductDependencies = (
