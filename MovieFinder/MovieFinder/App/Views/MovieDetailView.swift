@@ -25,6 +25,17 @@ struct MovieDetailView: View {
                     .foregroundColor(.red)
                     .padding()
             } else if let movie = viewModel.movieDetail {
+                Button(action: {
+                    viewModel.toggleFavorite()
+                }) {
+                    Label(viewModel.isFavorite ? "Remove from Favorites" : "Add to Favorites",
+                          systemImage: viewModel.isFavorite ? "heart.fill" : "heart")
+                        .padding()
+                        .background(Color(.systemGray6))
+                        .cornerRadius(8)
+                }
+                .padding(.horizontal)
+                
                 ScrollView {
                     VStack(alignment: .leading, spacing: 12) {
                         Text(movie.title)
