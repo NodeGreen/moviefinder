@@ -16,7 +16,7 @@ final class MovieAPIClient: MovieAPIClientProtocol {
     }
 
     func searchMovies(query: String, completion: @escaping (Result<[Movie], Error>) -> Void) {
-        let request = APIRequest(endpoint: OMDbEndpoint.search(query: query))
+        let request = APIRequest<SearchResult>(endpoint: OMDbEndpoint.search(query: query))
         httpClient.send(request) { (result: Result<SearchResult, Error>) in
             switch result {
             case .success(let response):
@@ -28,7 +28,7 @@ final class MovieAPIClient: MovieAPIClientProtocol {
     }
 
     func getMovieDetail(imdbID: String, completion: @escaping (Result<MovieDetail, Error>) -> Void) {
-        let request = APIRequest(endpoint: OMDbEndpoint.detail(imdbID: imdbID))
+        let request = APIRequest<MovieDetail>(endpoint: OMDbEndpoint.detail(imdbID: imdbID))
         httpClient.send(request, completion: completion)
     }
 }
