@@ -19,6 +19,14 @@ struct MovieSearchView: View {
             .padding(.vertical, 8)
             .background(Color(.systemBackground))
             .zIndex(1)
+            
+            if !viewModel.recentQueries.isEmpty {
+                RecentSearchesView(queries: viewModel.recentQueries) { tappedQuery in
+                    viewModel.query = tappedQuery
+                    viewModel.search()
+                }
+                .padding(.horizontal)
+            }
 
             Divider()
 
