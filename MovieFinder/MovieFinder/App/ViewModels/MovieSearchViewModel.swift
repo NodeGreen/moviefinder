@@ -5,7 +5,6 @@
 //  Created by Endo on 25/05/25.
 //
 
-
 import Foundation
 import Combine
 
@@ -23,6 +22,9 @@ final class MovieSearchViewModel: ObservableObject {
     private let apiClient: MovieAPIClientProtocol
     private let cache: SearchCacheProtocol
     
+    private var currentSearchQuery: String = ""
+    private var searchTask: Task<Void, Never>?
+    
     init(apiClient: MovieAPIClientProtocol,
          cache: SearchCacheProtocol = SearchCache(),
          favoritesRepository: FavoritesRepositoryProtocol = FavoritesRepository()) {
@@ -35,28 +37,66 @@ final class MovieSearchViewModel: ObservableObject {
 
     func search() {
         let trimmed = query.trimmingCharacters(in: .whitespaces)
+        
         guard !trimmed.isEmpty else {
-            movies = []
+            clearResults()
             return
         }
-
+        
+        guard trimmed != currentSearchQuery else {
+            return
+        }
+        
+        searchTask?.cancel()
+        
+        currentSearchQuery = trimmed
         isLoading = true
         errorMessage = nil
+        
         cache.save(trimmed)
         recentQueries = cache.load()
 
-        apiClient.searchMovies(query: trimmed) { [weak self] result in
-            Task { @MainActor in
-                self?.isLoading = false
-                switch result {
-                case .success(let movies):
-                    self?.movies = movies
-                case .failure(let error):
-                    self?.errorMessage = error.localizedDescription
-                    self?.movies = []
+        searchTask = Task { [weak self] in
+            await self?.performSearch(query: trimmed)
+        }
+    }
+    
+    private func performSearch(query: String) async {
+        await withCheckedContinuation { continuation in
+            apiClient.searchMovies(query: query) { [weak self] result in
+                Task { @MainActor in
+                    guard self?.currentSearchQuery == query else {
+                        continuation.resume()
+                        return
+                    }
+                    
+                    self?.isLoading = false
+                    
+                    switch result {
+                    case .success(let movies):
+                        self?.movies = movies
+                        self?.errorMessage = nil
+                    case .failure(let error):
+                        self?.errorMessage = error.localizedDescription
+                        self?.movies = []
+                    }
+                    
+                    continuation.resume()
                 }
             }
         }
+    }
+    
+    func searchFromRecent(_ recentQuery: String) {
+        query = recentQuery
+        search()
+    }
+    
+    private func clearResults() {
+        movies = []
+        errorMessage = nil
+        currentSearchQuery = ""
+        searchTask?.cancel()
     }
     
     func toggleFavorite(for movie: Movie) {
@@ -73,5 +113,9 @@ final class MovieSearchViewModel: ObservableObject {
     
     func refreshFavorites() {
         favoriteIDs = Set(favoritesRepository.getAll().map { $0.id })
+    }
+    
+    deinit {
+        searchTask?.cancel()
     }
 }

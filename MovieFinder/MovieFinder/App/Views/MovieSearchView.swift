@@ -1,10 +1,9 @@
 //
-//  MovieSearchTestView.swift
+//  MovieSearchView.swift
 //  MovieFinder
 //
 //  Created by Endo on 25/05/25.
 //
-
 
 import SwiftUI
 
@@ -22,8 +21,7 @@ struct MovieSearchView: View {
             
             if !viewModel.recentQueries.isEmpty {
                 RecentSearchesView(queries: viewModel.recentQueries) { tappedQuery in
-                    viewModel.query = tappedQuery
-                    viewModel.search()
+                    viewModel.searchFromRecent(tappedQuery)
                 }
                 .padding(.horizontal)
             }
@@ -89,7 +87,6 @@ struct MovieSearchView: View {
                     )
                 }
             }
-
             .listStyle(.plain)
         }
     }
