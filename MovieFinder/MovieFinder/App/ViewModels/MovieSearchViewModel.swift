@@ -17,14 +17,20 @@ final class MovieSearchViewModel: ObservableObject {
     @Published var errorMessage: String?
     @Published var selectedMovieID: String?
     @Published var recentQueries: [String] = []
+    @Published var favoriteIDs: Set<String> = []
 
+    private let favoritesRepository: FavoritesRepositoryProtocol
     private let apiClient: MovieAPIClientProtocol
     private let cache: SearchCacheProtocol
     
-    init(apiClient: MovieAPIClientProtocol, cache: SearchCacheProtocol = SearchCache()) {
+    init(apiClient: MovieAPIClientProtocol,
+         cache: SearchCacheProtocol = SearchCache(),
+         favoritesRepository: FavoritesRepositoryProtocol = FavoritesRepository()) {
         self.apiClient = apiClient
         self.cache = cache
+        self.favoritesRepository = favoritesRepository
         self.recentQueries = cache.load()
+        self.favoriteIDs = Set(favoritesRepository.getAll().map { $0.id })
     }
 
     func search() {
@@ -51,5 +57,21 @@ final class MovieSearchViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    func toggleFavorite(for movie: Movie) {
+        let favorite = FavoriteMovie(id: movie.imdbID, title: movie.title, year: movie.year, poster: movie.poster)
+
+        if favoriteIDs.contains(favorite.id) {
+            favoritesRepository.remove(favorite)
+            favoriteIDs.remove(favorite.id)
+        } else {
+            favoritesRepository.add(favorite)
+            favoriteIDs.insert(favorite.id)
+        }
+    }
+    
+    func refreshFavorites() {
+        favoriteIDs = Set(favoritesRepository.getAll().map { $0.id })
     }
 }

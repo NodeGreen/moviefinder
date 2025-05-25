@@ -10,10 +10,13 @@ import SwiftUI
 
 struct MovieRow: View {
     let movie: Movie
+    let isFavorite: Bool
+    let onToggleFavorite: () -> Void
 
     var body: some View {
         HStack(spacing: 12) {
-            if let url = URL(string: movie.poster), !movie.poster.isEmpty {
+            if let encoded = movie.poster.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
+               let url = URL(string: encoded), !movie.poster.isEmpty {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .empty:
@@ -42,6 +45,11 @@ struct MovieRow: View {
 
             Spacer()
 
+            Button(action: onToggleFavorite) {
+                Image(systemName: isFavorite ? "heart.fill" : "heart")
+                    .foregroundColor(isFavorite ? .red : .gray)
+            }
+
             Image(systemName: "chevron.right")
                 .foregroundColor(.gray)
         }
@@ -51,5 +59,5 @@ struct MovieRow: View {
 }
 
 #Preview {
-    MovieRow(movie: Movie(title: "test", year: "test", poster: "test", imdbID: "test"))
+    MovieRow(movie: Movie(title: "test", year: "test", poster: "test", imdbID: "test"), isFavorite: true, onToggleFavorite: {})
 }

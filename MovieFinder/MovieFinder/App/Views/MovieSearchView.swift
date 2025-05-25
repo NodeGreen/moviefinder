@@ -33,6 +33,9 @@ struct MovieSearchView: View {
             content
                 .background(Color(.systemGroupedBackground))
         }
+        .onAppear {
+            viewModel.refreshFavorites()
+        }
         .navigationDestination(
             item: Binding(
                 get: { viewModel.selectedMovieID },
@@ -77,9 +80,16 @@ struct MovieSearchView: View {
                 Button {
                     viewModel.selectedMovieID = movie.imdbID
                 } label: {
-                    MovieRow(movie: movie)
+                    MovieRow(
+                        movie: movie,
+                        isFavorite: viewModel.favoriteIDs.contains(movie.imdbID),
+                        onToggleFavorite: {
+                            viewModel.toggleFavorite(for: movie)
+                        }
+                    )
                 }
             }
+
             .listStyle(.plain)
         }
     }
