@@ -5,7 +5,6 @@
 //  Created by Endo on 25/05/25.
 //
 
-
 import Foundation
 
 @MainActor
@@ -13,6 +12,7 @@ final class MyFavoritesViewModel: ObservableObject {
     @Published var favorites: [FavoriteMovie] = []
 
     private let repository: FavoritesRepositoryProtocol
+    private var refreshTask: Task<Void, Never>?
 
     init(repository: FavoritesRepositoryProtocol = FavoritesRepository()) {
         self.repository = repository
@@ -20,15 +20,34 @@ final class MyFavoritesViewModel: ObservableObject {
     }
 
     func loadFavorites() {
-        favorites = repository.getAll()
+        refreshTask?.cancel()
+        
+        refreshTask = Task { [weak self] in
+            let favorites = await Task.detached {
+                return await self?.repository.getAll() ?? []
+            }.value
+            
+            await MainActor.run { [weak self] in
+                self?.favorites = favorites
+            }
+        }
     }
 
     func remove(_ movie: FavoriteMovie) {
-        repository.remove(movie)
-        loadFavorites()
+        Task { [weak self] in
+            await Task.detached {
+                self?.repository.remove(movie)
+            }.value
+            
+            await self?.loadFavorites()
+        }
     }
 
     func toMovie(_ favorite: FavoriteMovie) -> Movie {
         Movie(title: favorite.title, year: favorite.year, poster: favorite.poster, imdbID: favorite.id)
+    }
+    
+    deinit {
+        refreshTask?.cancel()
     }
 }

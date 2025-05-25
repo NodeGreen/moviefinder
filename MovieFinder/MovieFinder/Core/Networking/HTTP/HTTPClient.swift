@@ -1,9 +1,10 @@
 //
-//  HTTPClient.swift
+//  HTTPClientProtocol.swift
 //  MovieFinder
 //
 //  Created by Endo on 25/05/25.
 //
+
 import Foundation
 
 final class HTTPClient: HTTPClientProtocol {
@@ -23,7 +24,10 @@ final class HTTPClient: HTTPClientProtocol {
         urlRequest.httpMethod = request.method.rawValue
         urlRequest.timeoutInterval = 30
 
-        let task = session.dataTask(with: urlRequest) { data, response, error in
+        let task = session.dataTask(with: urlRequest) { [weak self] data, response, error in
+
+            guard self != nil else { return }
+            
             if let error = error {
                 let movieError = MovieError.from(error)
                 return completion(.failure(movieError))

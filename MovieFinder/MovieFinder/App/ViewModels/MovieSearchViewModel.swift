@@ -24,6 +24,7 @@ final class MovieSearchViewModel: ObservableObject {
     
     private var currentSearchQuery: String = ""
     private var searchTask: Task<Void, Never>?
+    private var cancellables = Set<AnyCancellable>()
     
     init(apiClient: MovieAPIClientProtocol,
          cache: SearchCacheProtocol = SearchCache(),
@@ -62,23 +63,33 @@ final class MovieSearchViewModel: ObservableObject {
     }
     
     private func performSearch(query: String) async {
-        await withCheckedContinuation { continuation in
-            apiClient.searchMovies(query: query) { [weak self] result in
-                Task { @MainActor in
-                    guard self?.currentSearchQuery == query else {
+        await withCheckedContinuation { [weak self] continuation in
+            guard let self = self else {
+                continuation.resume()
+                return
+            }
+            
+            self.apiClient.searchMovies(query: query) { [weak self] result in
+                Task { @MainActor [weak self] in
+                    guard let self = self else {
                         continuation.resume()
                         return
                     }
                     
-                    self?.isLoading = false
+                    guard self.currentSearchQuery == query else {
+                        continuation.resume()
+                        return
+                    }
+                    
+                    self.isLoading = false
                     
                     switch result {
                     case .success(let movies):
-                        self?.movies = movies
-                        self?.errorMessage = nil
+                        self.movies = movies
+                        self.errorMessage = nil
                     case .failure(let error):
-                        self?.errorMessage = error.localizedDescription
-                        self?.movies = []
+                        self.errorMessage = error.localizedDescription
+                        self.movies = []
                     }
                     
                     continuation.resume()
@@ -117,5 +128,6 @@ final class MovieSearchViewModel: ObservableObject {
     
     deinit {
         searchTask?.cancel()
+        cancellables.removeAll()
     }
 }
