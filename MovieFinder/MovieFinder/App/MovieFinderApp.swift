@@ -11,9 +11,7 @@ import SwiftUI
 struct MovieFinderApp: App {
     var body: some Scene {
         WindowGroup {
-            NavigationStack {
-                MovieSearchView()
-            }
+            MainView()
         }
     }
 }
