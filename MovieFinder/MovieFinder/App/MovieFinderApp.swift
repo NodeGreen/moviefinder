@@ -9,6 +9,11 @@ import SwiftUI
 
 @main
 struct MovieFinderApp: App {
+    
+    init() {
+        ImageLoader.configure()
+    }
+    
     var body: some Scene {
         WindowGroup {
             MainView()

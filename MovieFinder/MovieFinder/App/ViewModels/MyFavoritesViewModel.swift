@@ -36,10 +36,10 @@ final class MyFavoritesViewModel: ObservableObject {
     func remove(_ movie: FavoriteMovie) {
         Task { [weak self] in
             await Task.detached {
-                self?.repository.remove(movie)
+                await self?.repository.remove(movie)
             }.value
             
-            await self?.loadFavorites()
+            self?.loadFavorites()
         }
     }
 
