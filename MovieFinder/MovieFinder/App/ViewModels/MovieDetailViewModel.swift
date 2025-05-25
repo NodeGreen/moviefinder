@@ -5,7 +5,6 @@
 //  Created by Endo on 25/05/25.
 //
 
-
 import Foundation
 
 @MainActor
@@ -16,9 +15,9 @@ final class MovieDetailViewModel: ObservableObject {
     @Published var isFavorite: Bool = false
     
     private let favoritesRepository: FavoritesRepositoryProtocol
-
     private let imdbID: String
     private let apiClient: MovieAPIClientProtocol
+    private var fetchTask: Task<Void, Never>?
 
     init(imdbID: String,
          apiClient: MovieAPIClientProtocol,
@@ -30,19 +29,69 @@ final class MovieDetailViewModel: ObservableObject {
     }
 
     func fetch() {
+        guard !imdbID.trimmingCharacters(in: .whitespaces).isEmpty else {
+            errorMessage = "Invalid movie ID"
+            return
+        }
+        
+        fetchTask?.cancel()
+        
         isLoading = true
         errorMessage = nil
+        movieDetail = nil
 
-        apiClient.getMovieDetail(imdbID: imdbID) { [weak self] result in
-            Task { @MainActor in
-                self?.isLoading = false
-                switch result {
-                case .success(let detail):
-                    self?.movieDetail = detail
-                case .failure(let error):
-                    self?.errorMessage = error.localizedDescription
+        fetchTask = Task { [weak self] in
+            await self?.performFetch()
+        }
+    }
+    
+    private func performFetch() async {
+        await withCheckedContinuation { continuation in
+            apiClient.getMovieDetail(imdbID: imdbID) { [weak self] result in
+                Task { @MainActor in
+                    guard let self = self else {
+                        continuation.resume()
+                        return
+                    }
+                    
+                    self.isLoading = false
+                    
+                    switch result {
+                    case .success(let detail):
+                        if self.isValidMovieDetail(detail) {
+                            self.movieDetail = detail
+                            self.errorMessage = nil
+                        } else {
+                            self.errorMessage = "Movie details are incomplete or invalid"
+                        }
+                    case .failure(let error):
+                        self.errorMessage = self.userFriendlyError(from: error)
+                    }
+                    
+                    continuation.resume()
                 }
             }
+        }
+    }
+    
+    private func isValidMovieDetail(_ detail: MovieDetail) -> Bool {
+        return !detail.title.isEmpty &&
+               detail.title != "N/A" &&
+               !detail.year.isEmpty &&
+               detail.year != "N/A"
+    }
+    
+    private func userFriendlyError(from error: Error) -> String {
+        if error.localizedDescription.contains("not found") ||
+           error.localizedDescription.contains("404") {
+            return "Movie not found. Please check the movie ID."
+        } else if error.localizedDescription.contains("network") ||
+                  error.localizedDescription.contains("internet") {
+            return "Network error. Please check your internet connection."
+        } else if error.localizedDescription.contains("timeout") {
+            return "Request timed out. Please try again."
+        } else {
+            return "Unable to load movie details. Please try again later."
         }
     }
     
@@ -64,5 +113,8 @@ final class MovieDetailViewModel: ObservableObject {
             isFavorite = true
         }
     }
-
+    
+    deinit {
+        fetchTask?.cancel()
+    }
 }
