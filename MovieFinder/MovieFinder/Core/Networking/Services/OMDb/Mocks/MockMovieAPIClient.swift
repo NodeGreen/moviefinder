@@ -9,13 +9,19 @@
 import Foundation
 
 final class MockMovieAPIClient: MovieAPIClientProtocol {
-    var resultToReturn: Result<[Movie], Error> = .success([])
-
+    var searchResultToReturn: Result<[Movie], Error> = .success([])
+    var detailResultToReturn: Result<MovieDetail, Error> = .failure(MockError.unset)
+    
     func searchMovies(query: String, completion: @escaping (Result<[Movie], Error>) -> Void) {
-        completion(resultToReturn)
+        completion(searchResultToReturn)
     }
-
+    
     func getMovieDetail(imdbID: String, completion: @escaping (Result<MovieDetail, Error>) -> Void) {
-        fatalError("Not implemented yet!")
+        completion(detailResultToReturn)
+    }
+    
+    enum MockError: Error {
+        case unset
     }
 }
+
