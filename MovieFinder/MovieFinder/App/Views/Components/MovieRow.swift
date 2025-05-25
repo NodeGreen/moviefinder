@@ -13,126 +13,87 @@ struct MovieRow: View {
     let onToggleFavorite: () -> Void
 
     var body: some View {
-        HStack(spacing: 12) {
-            posterImage
-            
-            VStack(alignment: .leading, spacing: 4) {
+        HStack(spacing: 16) {
+            AsyncImage(url: posterURL) { phase in
+                switch phase {
+                case .empty:
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.quaternary)
+                        .overlay {
+                            Image(systemName: "photo")
+                                .foregroundStyle(.secondary)
+                                .font(.title2)
+                        }
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                        .clipped()
+                case .failure:
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.red.opacity(0.1))
+                        .overlay {
+                            Image(systemName: "exclamationmark.triangle")
+                                .foregroundStyle(.red)
+                                .font(.title3)
+                        }
+                @unknown default:
+                    EmptyView()
+                }
+            }
+            .frame(width: 70, height: 100)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
+
+            VStack(alignment: .leading, spacing: 6) {
                 Text(movie.title)
-                    .font(.headline)
+                    .font(.system(size: 18, weight: .semibold, design: .default))
+                    .foregroundStyle(.primary)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
                 
                 Text(movie.year)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
+                    .font(.system(size: 15, weight: .regular))
+                    .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            favoriteButton
-            
-            Image(systemName: "chevron.right")
-                .foregroundColor(.gray)
-                .font(.caption)
-        }
-        .contentShape(Rectangle())
-        .padding(.vertical, 6)
-    }
-    
-    private var posterImage: some View {
-        Group {
-            if let url = validPosterURL {
-                CachedAsyncImage(url: url) { image in
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                } errorView: { error in
-                    placeholderImageView
+            VStack(spacing: 8) {
+                Button(action: onToggleFavorite) {
+                    Image(systemName: isFavorite ? "heart.fill" : "heart")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(isFavorite ? .red : .secondary)
+                        .symbolEffect(.bounce, value: isFavorite)
                 }
-                .frame(width: 60, height: 90)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(
-                    RoundedRectangle(cornerRadius: 8)
-                        .stroke(Color(.systemGray4), lineWidth: 0.5)
-                )
-            } else {
-                placeholderImageView
+                .buttonStyle(.plain)
+                .accessibilityLabel(isFavorite ? "Remove from favorites" : "Add to favorites")
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(.tertiary)
             }
         }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .contentShape(Rectangle())
     }
     
-    private var placeholderImageView: some View {
-        RoundedRectangle(cornerRadius: 8)
-            .fill(Color(.systemGray5))
-            .frame(width: 60, height: 90)
-            .overlay(
-                VStack(spacing: 4) {
-                    Image(systemName: "film")
-                        .font(.title2)
-                        .foregroundColor(.secondary)
-                    Text("No Image")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                }
-            )
-    }
-    
-    private var favoriteButton: some View {
-        Button(action: onToggleFavorite) {
-            Image(systemName: isFavorite ? "heart.fill" : "heart")
-                .foregroundColor(isFavorite ? .red : .gray)
-                .font(.title3)
-                .scaleEffect(isFavorite ? 1.1 : 1.0)
-                .animation(.easeInOut(duration: 0.2), value: isFavorite)
-        }
-        .buttonStyle(.plain)
-    }
-    
-    private var validPosterURL: URL? {
+    private var posterURL: URL? {
         guard !movie.poster.isEmpty,
-              movie.poster != "N/A",
-              let url = URL(string: movie.poster),
-              url.scheme?.hasPrefix("http") == true else {
+              let encoded = movie.poster.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             return nil
         }
-        return url
+        return URL(string: encoded)
     }
 }
 
 #Preview {
-    VStack {
-        MovieRow(
-            movie: Movie(
-                title: "The Dark Knight",
-                year: "2008",
-                poster: "https://m.media-amazon.com/images/M/MV5BMTMxNTMwODM0NF5BMl5BanBnXkFtZTcwODAyMTk2Mw@@._V1_SX300.jpg",
-                imdbID: "tt0468569"
-            ),
-            isFavorite: false,
-            onToggleFavorite: {}
-        )
-        
-        MovieRow(
-            movie: Movie(
-                title: "Movie Without Poster",
-                year: "2024",
-                poster: "",
-                imdbID: "tt123456"
-            ),
-            isFavorite: true,
-            onToggleFavorite: {}
-        )
-        
-        MovieRow(
-            movie: Movie(
-                title: "Very Long Movie Title That Should Wrap to Multiple Lines",
-                year: "2023",
-                poster: "invalid_url",
-                imdbID: "tt789012"
-            ),
-            isFavorite: false,
-            onToggleFavorite: {}
-        )
-    }
+    MovieRow(
+        movie: Movie(title: "Inception", year: "2010", poster: "", imdbID: "tt1375666"),
+        isFavorite: true,
+        onToggleFavorite: {}
+    )
     .padding()
 }

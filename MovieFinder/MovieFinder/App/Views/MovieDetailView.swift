@@ -15,188 +15,142 @@ struct MovieDetailView: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            content
-        }
-        .navigationBarTitleDisplayMode(.inline)
-        .onAppear {
-            viewModel.fetch()
-        }
-    }
-    
-    @ViewBuilder
-    private var content: some View {
-        if viewModel.isLoading {
-            loadingView
-        } else if let error = viewModel.errorMessage {
-            errorView(error)
-        } else if let movie = viewModel.movieDetail {
-            movieContentView(movie)
-        } else {
-            emptyStateView
-        }
-    }
-    
-    private var loadingView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            ProgressView()
-                .scaleEffect(1.2)
-            Text("Loading movie details...")
-                .foregroundColor(.secondary)
-                .font(.subheadline)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    private func errorView(_ error: String) -> some View {
-        ScrollView {
-            VStack(spacing: 16) {
-                Spacer()
-                
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 48))
-                    .foregroundColor(.orange)
-                
-                Text("Unable to load movie details")
-                    .font(.headline)
-                    .multilineTextAlignment(.center)
-                
-                Text(error)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal)
-                
-                Button("Try Again") {
-                    viewModel.fetch()
-                }
-                .buttonStyle(.borderedProminent)
-                .padding(.top, 8)
-                
-                Spacer()
-            }
-            .frame(maxWidth: .infinity)
-            .frame(minHeight: 400)
-        }
-    }
-    
-    private var emptyStateView: some View {
-        VStack(spacing: 16) {
-            Spacer()
-            
-            Image(systemName: "film")
-                .font(.system(size: 48))
-                .foregroundColor(.gray)
-            
-            Text("Movie not found")
-                .font(.headline)
-                .foregroundColor(.primary)
-            
-            Text("The requested movie details could not be found.")
-                .font(.subheadline)
-                .foregroundColor(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-            
-            Button("Go Back") {
-                // Navigation back will be handled by the navigation stack
-            }
-            .buttonStyle(.bordered)
-            
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-    
-    private func movieContentView(_ movie: MovieDetail) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            favoriteButton
-                .padding(.horizontal)
-                .padding(.bottom, 8)
-            
+        GeometryReader { geometry in
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
-                    movieHeaderView(movie)
-                    movieDetailsView(movie)
-                    plotView(movie)
-                }
-                .padding()
-            }
-        }
-    }
-    
-    private var favoriteButton: some View {
-        Button(action: {
-            viewModel.toggleFavorite()
-        }) {
-            HStack {
-                Image(systemName: viewModel.isFavorite ? "heart.fill" : "heart")
-                Text(viewModel.isFavorite ? "Remove from Favorites" : "Add to Favorites")
-            }
-            .foregroundColor(viewModel.isFavorite ? .red : .blue)
-            .padding(.vertical, 12)
-            .padding(.horizontal, 20)
-            .background(Color(.systemGray6))
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-        }
-    }
-    
-    private func movieHeaderView(_ movie: MovieDetail) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text(movie.title)
-                .font(.largeTitle)
-                .fontWeight(.bold)
-                .lineLimit(nil)
-            
-            HStack {
-                Text(movie.year)
-                    .font(.title3)
-                    .foregroundColor(.secondary)
-                
-                if !movie.imdbRating.isEmpty && movie.imdbRating != "N/A" {
-                    Spacer()
-                    HStack(spacing: 4) {
-                        Image(systemName: "star.fill")
-                            .foregroundColor(.yellow)
-                        Text(movie.imdbRating)
-                            .fontWeight(.semibold)
+                VStack(spacing: 0) {
+                    if viewModel.isLoading {
+                        VStack(spacing: 20) {
+                            ProgressView()
+                                .scaleEffect(1.2)
+                                .tint(.blue)
+                            
+                            Text("Loading movie details...")
+                                .font(.system(size: 16, weight: .medium))
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(height: geometry.size.height * 0.6)
+                        
+                    } else if let error = viewModel.errorMessage {
+                        VStack(spacing: 16) {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                                .font(.system(size: 40))
+                                .foregroundStyle(.orange)
+                            
+                            Text("Something went wrong")
+                                .font(.system(size: 20, weight: .semibold))
+                                .foregroundStyle(.primary)
+                            
+                            Text(error)
+                                .font(.system(size: 16))
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .padding(.horizontal, 32)
+                        .frame(height: geometry.size.height * 0.6)
+                        
+                    } else if let movie = viewModel.movieDetail {
+                        VStack(spacing: 24) {
+                            VStack(spacing: 20) {
+                                Text(movie.title)
+                                    .font(.system(size: 28, weight: .bold, design: .default))
+                                    .foregroundStyle(.primary)
+                                    .multilineTextAlignment(.center)
+                                    .padding(.horizontal, 20)
+                                
+                                Button(action: {
+                                    viewModel.toggleFavorite()
+                                }) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: viewModel.isFavorite ? "heart.fill" : "heart")
+                                            .font(.system(size: 16, weight: .semibold))
+                                        
+                                        Text(viewModel.isFavorite ? "Remove from Favorites" : "Add to Favorites")
+                                            .font(.system(size: 16, weight: .semibold))
+                                    }
+                                    .foregroundStyle(viewModel.isFavorite ? .white : .blue)
+                                    .padding(.horizontal, 24)
+                                    .padding(.vertical, 12)
+                                    .background(
+                                        viewModel.isFavorite ?
+                                        AnyView(LinearGradient(colors: [.red, .pink], startPoint: .leading, endPoint: .trailing)) :
+                                        AnyView(Color.blue.opacity(0.1))
+                                    )
+                                    .clipShape(Capsule())
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(viewModel.isFavorite ? .clear : .blue.opacity(0.3), lineWidth: 1)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                .symbolEffect(.bounce, value: viewModel.isFavorite)
+                            }
+                            .padding(.top, 20)
+                            
+                            VStack(spacing: 16) {
+                                InfoSection(items: [
+                                    ("calendar", "Year", movie.year),
+                                    ("theatermasks", "Genre", movie.genre),
+                                    ("person.circle", "Director", movie.director),
+                                    ("star.fill", "IMDb Rating", movie.imdbRating)
+                                ])
+                                
+                                VStack(alignment: .leading, spacing: 12) {
+                                    HStack {
+                                        Image(systemName: "text.alignleft")
+                                            .font(.system(size: 16, weight: .medium))
+                                            .foregroundStyle(.blue)
+                                            .frame(width: 24)
+                                        
+                                        Text("Plot")
+                                            .font(.system(size: 18, weight: .semibold))
+                                            .foregroundStyle(.primary)
+                                    }
+                                    
+                                    Text(movie.plot)
+                                        .font(.system(size: 16, weight: .regular))
+                                        .foregroundStyle(.primary)
+                                        .lineSpacing(4)
+                                        .padding(.leading, 32)
+                                }
+                                .padding(.horizontal, 20)
+                                .padding(.vertical, 16)
+                                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+                            }
+                            .padding(.horizontal, 20)
+                        }
                     }
                 }
             }
         }
-    }
-    
-    private func movieDetailsView(_ movie: MovieDetail) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if !movie.genre.isEmpty && movie.genre != "N/A" {
-                InfoRow(label: "Genre", value: movie.genre)
-            }
-            
-            if !movie.director.isEmpty && movie.director != "N/A" {
-                InfoRow(label: "Director", value: movie.director)
-            }
-        }
-    }
-    
-    private func plotView(_ movie: MovieDetail) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            if !movie.plot.isEmpty && movie.plot != "N/A" {
-                Text("Plot")
-                    .font(.headline)
-                    .padding(.top, 8)
-                
-                Text(movie.plot)
-                    .font(.body)
-                    .lineSpacing(4)
-            }
+        .background(Color.white)
+        .onAppear {
+            viewModel.fetch()
         }
     }
 }
 
-#Preview {
-    NavigationStack {
-        MovieDetailView(imdbID: "tt1375666")
+struct InfoSection: View {
+    let items: [(String, String, String)]
+    
+    var body: some View {
+        VStack(spacing: 12) {
+            ForEach(Array(items.enumerated()), id: \.offset) { index, item in
+                InfoRow(iconName: item.0, label: item.1, value: item.2)
+                
+                if index < items.count - 1 {
+                    Divider()
+                        .padding(.horizontal, 20)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
+        .padding(.horizontal, 20)
     }
+}
+
+
+#Preview {
+    MovieDetailView(imdbID: "tt1375666")
 }
